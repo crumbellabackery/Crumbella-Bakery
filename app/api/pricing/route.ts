@@ -81,6 +81,9 @@ async function fetchAndParsePricing(): Promise<PricingData> {
           portionOptions: [],
           image: imageUrl,
         };
+      } else if (!data[productId].image || data[productId].image === "/logo.png") {
+        // Update image from subsequent rows if not properly set or is default logo
+        data[productId].image = imageUrl;
       }
 
       // Add portion option (can be multiple per product)
