@@ -60,10 +60,10 @@ export async function POST(request: Request) {
               ${item.quantity}
             </td>
             <td style="padding: 8px; border-bottom: 1px solid #e0e0e0; text-align: right;">
-              ₺${item.unitPrice}
+              ₺${item.unitPrice.toFixed(2)}
             </td>
             <td style="padding: 8px; border-bottom: 1px solid #e0e0e0; text-align: right; font-weight: bold;">
-              ₺${item.totalPrice}
+              ₺${item.totalPrice.toFixed(2)}
             </td>
           </tr>
         `;
@@ -103,7 +103,7 @@ export async function POST(request: Request) {
           <div style="background-color: #faf7f2; padding: 15px; border-radius: 8px; margin: 20px 0;">
             <div style="display: flex; justify-content: space-between; font-size: 18px;">
               <strong>Genel Toplam:</strong>
-              <strong style="color: #c89b7b; font-size: 24px;">₺${cartTotal}</strong>
+              <strong style="color: #c89b7b; font-size: 24px;">₺${cartTotal.toFixed(2)}</strong>
             </div>
           </div>
           
