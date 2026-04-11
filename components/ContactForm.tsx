@@ -252,7 +252,7 @@ export function ContactForm() {
                   ?.find(opt => opt.portionType === selectedPortionType)
                   ?.unitPrice && (
                   <>
-                    ₺{quantity * (pricing[selectedProductId]?.portionOptions?.find(opt => opt.portionType === selectedPortionType)?.unitPrice || 0)}
+                    ₺{(quantity * (pricing[selectedProductId]?.portionOptions?.find(opt => opt.portionType === selectedPortionType)?.unitPrice || 0)).toFixed(2)}
                   </>
                 )}
               </div>
