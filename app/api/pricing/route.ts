@@ -44,18 +44,31 @@ async function fetchAndParsePricing(): Promise<PricingData> {
       const line = lines[i];
       if (!line.trim()) continue;
 
-      // Try tab-separated first, then comma-separated
-      let parts = line.split("\t");
-      if (parts.length < 4) {
-        parts = line.split(",");
+      // Parse CSV handling quoted values (for descriptions with commas)
+      let parts: string[] = [];
+      let current = "";
+      let inQuotes = false;
+
+      for (let j = 0; j < line.length; j++) {
+        const char = line[j];
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if ((char === "\t" || char === ",") && !inQuotes) {
+          parts.push(current.trim());
+          current = "";
+        } else {
+          current += char;
+        }
       }
+      if (current) parts.push(current.trim());
+
       if (parts.length < 4) continue;
 
-      const productName = parts[0].trim();
-      const portionType = parts[1].trim();  // "Adet", "Tepsi", vb.
-      const unitPriceStr = parts[2].trim();
-      const description = parts[3]?.trim() || "";         // Açıklama (4. sütun)
-      let imageUrl = parts[4]?.trim() || "";              // Görsel URL (5. sütun)
+      const productName = parts[0].replace(/"/g, "");
+      const portionType = parts[1].replace(/"/g, "");  // "Adet", "Tepsi", vb.
+      const unitPriceStr = parts[2].replace(/"/g, "");
+      const description = parts[3]?.replace(/"/g, "") || "";         // Açıklama (4. sütun)
+      let imageUrl = parts[4]?.replace(/"/g, "") || "";              // Görsel URL (5. sütun)
 
       // Remove ₺ if present and parse as number
       const unitPrice = parseInt(unitPriceStr.replace("₺", "").trim(), 10);
@@ -96,6 +109,9 @@ async function fetchAndParsePricing(): Promise<PricingData> {
           portionOptions: [],
           image: imageUrl,
         };
+      } else if (!data[productId].image || data[productId].image === "/logo.png") {
+        // Update image from subsequent rows if not properly set
+        data[productId].image = imageUrl;
       }
 
       // Add portion option (can be multiple per product)
