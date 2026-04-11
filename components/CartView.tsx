@@ -246,11 +246,11 @@ export function CartView() {
                       </p>
                     )}
                     <div className="flex flex-wrap items-center gap-1.5 text-xs sm:text-sm">
-                      <p className="text-luxury-accent font-bold">₺{item.unitPrice}</p>
+                      <p className="text-luxury-accent font-bold">₺{item.unitPrice.toFixed(2)}</p>
                       <span className="text-luxury-text/30">×</span>
                       <p className="text-luxury-text/70">{item.quantity}x</p>
                       <span className="text-luxury-text/30">=</span>
-                      <p className="font-bold text-luxury-accent">₺{item.totalPrice}</p>
+                      <p className="font-bold text-luxury-accent">₺{item.totalPrice.toFixed(2)}</p>
                     </div>
                   </div>
 
@@ -295,7 +295,7 @@ export function CartView() {
                   <div className="flex justify-between items-center pt-1">
                     <span className="text-xs sm:text-sm font-semibold text-luxury-text">Toplam</span>
                     <span className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-luxury-accent to-luxury-secondary bg-clip-text text-transparent">
-                      ₺{cart.totalPrice}
+                      ₺{cart.totalPrice.toFixed(2)}
                     </span>
                   </div>
                 </div>
