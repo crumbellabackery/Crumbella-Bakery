@@ -70,8 +70,13 @@ async function fetchAndParsePricing(): Promise<PricingData> {
       const description = parts[3]?.replace(/"/g, "") || "";         // Açıklama (4. sütun)
       let imageUrl = parts[4]?.replace(/"/g, "") || "";              // Görsel URL (5. sütun)
 
-      // Remove ₺ if present and parse as number
-      const unitPrice = parseInt(unitPriceStr.replace("₺", "").trim(), 10);
+      // Remove ₺ or " TL" if present and parse as number
+      const unitPrice = parseFloat(
+        unitPriceStr
+          .replace(" TL", "")
+          .replace("₺", "")
+          .trim()
+      );
       if (isNaN(unitPrice)) continue;
 
       // Validate image URL - fallback to logo if empty or placeholder
