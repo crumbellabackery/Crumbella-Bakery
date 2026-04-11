@@ -64,11 +64,26 @@ async function fetchAndParsePricing(): Promise<PricingData> {
       // Validate image URL - fallback to logo if empty or placeholder
       if (!imageUrl || imageUrl.includes("example.com") || !imageUrl.startsWith("http")) {
         imageUrl = "/logo.png";
+      } else if (imageUrl.includes("drive.google.com")) {
+        // Convert Google Drive URL to direct download/preview format
+        const fileIdMatch = imageUrl.match(/id=([a-zA-Z0-9-_]+)/);
+        if (fileIdMatch) {
+          imageUrl = `https://drive.google.com/uc?export=view&id=${fileIdMatch[1]}`;
+        }
       }
 
       // Create ID from product name (lowercase, replace spaces/special chars)
-      const productId = productName
+      // Normalize Turkish characters first
+      let normalized = productName
         .toLowerCase()
+        .replace(/ç/g, "c")
+        .replace(/ğ/g, "g")
+        .replace(/ş/g, "s")
+        .replace(/ı/g, "i")
+        .replace(/ö/g, "o")
+        .replace(/ü/g, "u");
+      
+      const productId = normalized
         .replace(/\s+/g, "-")
         .replace(/[^\w-]/g, "");
 
@@ -81,9 +96,6 @@ async function fetchAndParsePricing(): Promise<PricingData> {
           portionOptions: [],
           image: imageUrl,
         };
-      } else if (!data[productId].image || data[productId].image === "/logo.png") {
-        // Update image from subsequent rows if not properly set or is default logo
-        data[productId].image = imageUrl;
       }
 
       // Add portion option (can be multiple per product)
