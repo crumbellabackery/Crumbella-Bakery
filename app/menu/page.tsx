@@ -67,7 +67,7 @@ export default function MenuPage() {
                 {product.portionOptions?.map((portion, idx) => (
                   <div key={idx} className="flex justify-between text-sm text-luxury-text/80">
                     <span>{portion.portionType}</span>
-                    <span className="font-semibold text-luxury-accent">₺{portion.unitPrice}</span>
+                    <span className="font-semibold text-luxury-accent">₺{portion.unitPrice.toFixed(2)}</span>
                   </div>
                 ))}
               </div>
