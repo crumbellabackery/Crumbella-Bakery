@@ -131,7 +131,7 @@ export function AddToCartModal({ product, isOpen, onClose }: AddToCartModalProps
           <div className="flex justify-between items-center">
             <span className="font-semibold text-sm text-luxury-text">Toplam</span>
             <span className="text-xl font-bold text-luxury-accent">
-              ₺{(quantity * (selectedOption?.unitPrice || 0)).toFixed(0)}
+              ₺{(quantity * (selectedOption?.unitPrice || 0)).toFixed(2)}
             </span>
           </div>
         </div>
