@@ -4,7 +4,6 @@
 
 import { Resend } from "resend";
 import type { CartItem } from "@/lib/cart-types";
-import { generateOrderPdfBuffer } from "@/lib/order-pdf";
 
 export type CartOrderRequest = {
   firstName: string;
@@ -71,21 +70,6 @@ export async function POST(request: Request) {
     }
 
     const orderId = `CR-${Date.now().toString().slice(-8)}`;
-    const orderPdfData = {
-      firstName,
-      lastName,
-      phone,
-      orderId,
-      items: cartItems.map((item) => ({
-        name: item.name,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        totalPrice: item.totalPrice,
-        portionType: item.portionType,
-      })),
-      total: cartTotal,
-    };
-
     // Build HTML table for cart items
     const itemsHtml = cartItems
       .map((item) => {
@@ -232,25 +216,6 @@ export async function POST(request: Request) {
         },
         { status: 500 }
       );
-    }
-
-    // Try sending PDF as a secondary email (does not block order flow)
-    try {
-      const pdfBuffer = await generateOrderPdfBuffer(orderPdfData);
-      await resend.emails.send({
-        from: fromEmail,
-        to: email,
-        subject: `Sipariş Belgeniz (PDF) #${orderId}`,
-        html: `<p>Merhaba ${firstName}, sipariş belgeniz PDF olarak ektedir.</p>`,
-        attachments: [
-          {
-            filename: `siparis-${orderId}.pdf`,
-            content: pdfBuffer,
-          },
-        ],
-      });
-    } catch (pdfMailError) {
-      console.error("PDF ekli müşteri maili gönderilemedi:", pdfMailError);
     }
 
     // Order processed
