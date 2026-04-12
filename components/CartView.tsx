@@ -51,38 +51,76 @@ export function CartView() {
   useEffect(() => {
     if (submitted && orderId) {
       setTimeout(() => {
-        const downloadPdf = async () => {
-          try {
-            const response = await fetch("/api/generate-order-pdf", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                firstName: submittedData.firstName,
-                lastName: submittedData.lastName,
-                phone: submittedData.phone,
-                orderId: orderId,
-                items: submittedCart,
-                total: submittedTotal,
-              }),
-            });
-
-            if (response.ok) {
-              const blob = await response.blob();
-              const url = window.URL.createObjectURL(blob);
-              const a = document.createElement("a");
-              a.href = url;
-              a.download = `siparis-${orderId}.pdf`;
-              document.body.appendChild(a);
-              a.click();
-              window.URL.revokeObjectURL(url);
-              document.body.removeChild(a);
-            }
-          } catch (error) {
-            console.error("PDF indirme hatası:", error);
+        try {
+          const html2pdf = (window as any).html2pdf;
+          if (!html2pdf) {
+            console.error("html2pdf not loaded");
+            return;
           }
-        };
 
-        downloadPdf();
+          const pdfContent = `
+            <div style="font-family: 'Arial', sans-serif; color: #2c2c2c; max-width: 100%; margin: 0; padding: 0;">
+              <div style="text-align: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #d4af37;">
+                <h1 style="font-size: 32px; margin: 0 0 5px 0; font-weight: bold; letter-spacing: 2px;">Crumbella</h1>
+                <h2 style="font-size: 14px; color: #888; margin: 0; font-weight: 300; letter-spacing: 1px;">SİPARİŞ BELGESİ</h2>
+              </div>
+
+              <div style="margin-bottom: 15px; font-size: 11px; line-height: 1.6;">
+                <p style="margin: 5px 0;"><strong>Sipariş No:</strong> ${orderId}</p>
+                <p style="margin: 5px 0;"><strong>Tarih:</strong> ${new Date().toLocaleDateString("tr-TR", { year: 'numeric', month: '2-digit', day: '2-digit' })}</p>
+              </div>
+
+              <div style="margin-bottom: 20px; padding: 12px; background-color: #f9f7f4; border-left: 3px solid #d4af37;">
+                <p style="margin: 3px 0; font-size: 11px;"><strong>Müşteri:</strong> ${submittedData.firstName} ${submittedData.lastName}</p>
+                <p style="margin: 3px 0; font-size: 11px;"><strong>Telefon:</strong> ${submittedData.phone}</p>
+              </div>
+
+              <h3 style="font-size: 12px; font-weight: bold; margin: 15px 0 10px 0; text-transform: uppercase; letter-spacing: 1px;">Sipariş Detayları</h3>
+              <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 10px;">
+                <thead>
+                  <tr style="background-color: #f0ebe5; border-bottom: 2px solid #d4af37;">
+                    <th style="padding: 8px; text-align: left; font-weight: bold; border-right: 1px solid #ddd;">Ürün</th>
+                    <th style="padding: 8px; text-align: center; font-weight: bold; width: 15%; border-right: 1px solid #ddd;">Miktar</th>
+                    <th style="padding: 8px; text-align: right; font-weight: bold; width: 18%; border-right: 1px solid #ddd;">Birim Fiyat</th>
+                    <th style="padding: 8px; text-align: right; font-weight: bold; width: 18%;">Toplam</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${submittedCart.map(item => `
+                    <tr style="border-bottom: 1px solid #e5e5e5;">
+                      <td style="padding: 8px; text-align: left; border-right: 1px solid #f0f0f0;">${item.name}${item.portionType ? ` <span style="color: #999;">(${item.portionType})</span>` : ""}</td>
+                      <td style="padding: 8px; text-align: center; border-right: 1px solid #f0f0f0;">${item.quantity}</td>
+                      <td style="padding: 8px; text-align: right; border-right: 1px solid #f0f0f0;">₺${item.unitPrice.toFixed(2)}</td>
+                      <td style="padding: 8px; text-align: right; font-weight: 600;">₺${item.totalPrice.toFixed(2)}</td>
+                    </tr>
+                  `).join("")}
+                </tbody>
+              </table>
+
+              <div style="text-align: right; padding: 12px 0; border-top: 2px solid #d4af37; border-bottom: 2px solid #d4af37; margin-bottom: 15px;">
+                <p style="font-size: 14px; font-weight: bold; margin: 0; color: #d4af37;">TOPLAM: ₺${submittedTotal.toFixed(2)}</p>
+              </div>
+
+              <div style="font-size: 9px; color: #888; line-height: 1.5; text-align: center; padding-top: 10px; border-top: 1px solid #ddd;">
+                <p style="margin: 3px 0;">Siparişiniz başarıyla alınmıştır.</p>
+                <p style="margin: 3px 0;">En kısa zamanda mesaj yoluyla sizinle iletişime geçeceğiz.</p>
+                <p style="margin: 5px 0 0 0; font-size: 8px;">Crumbella Bakery</p>
+              </div>
+            </div>
+          `;
+          const element = document.createElement("div");
+          element.innerHTML = pdfContent;
+          const opt = {
+            margin: 12,
+            filename: `siparis-${orderId}.pdf`,
+            image: { type: "png" as const, quality: 0.98 },
+            html2canvas: { scale: 2 },
+            jsPDF: { orientation: "portrait" as const, unit: "mm" as const, format: "a4" as const },
+          };
+          html2pdf().set(opt).from(element).save();
+        } catch (error) {
+          console.error("PDF oluşturma hatası:", error);
+        }
       }, 500);
     }
   }, [submitted, orderId, submittedTotal, submittedData, submittedCart]);
