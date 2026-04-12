@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import Script from "next/script";
 import { Poppins } from "next/font/google";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -58,17 +57,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="tr" className={poppins.variable}>
-      <head>
-        <Script
-          src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"
-          strategy="beforeInteractive"
-          onLoad={() => {
-            if (typeof window !== "undefined") {
-              (window as any).html2pdfGlobal = (window as any).html2pdf;
-            }
-          }}
-        />
-      </head>
       <body
         className={`${poppins.className} min-h-[100dvh] bg-luxury-bg text-luxury-text antialiased`}
       >

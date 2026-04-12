@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import jsPDF from "jspdf";
+import PDFDocument from "pdfkit";
 
 interface OrderItem {
   name: string;
@@ -18,125 +18,123 @@ interface OrderData {
   total: number;
 }
 
+// Convert mm to PDF points (1mm = 2.8346pt)
+const pt = (mm: number) => mm * 2.8346;
+
 export async function POST(request: NextRequest) {
   try {
     const orderData: OrderData = await request.json();
 
-    const doc = new jsPDF({
-      orientation: "portrait",
-      unit: "mm",
-      format: "a4",
-    });
+    const doc = new PDFDocument({ size: "A4", margin: 0, autoFirstPage: true });
+    const chunks: Uint8Array[] = [];
+    doc.on("data", (chunk: Uint8Array) => chunks.push(chunk));
+    const pdfReady = new Promise<void>((resolve) => doc.on("end", resolve));
 
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    let yPosition = 20;
+    const pageWidth = doc.page.width;   // 595.28pt for A4
+    const pageHeight = doc.page.height; // 841.89pt for A4
+    let y = pt(20);
 
     // Header
-    doc.setFontSize(20);
-    doc.setFont("Helvetica", "bold");
-    doc.text("Crumbella", pageWidth / 2, yPosition, { align: "center" });
-    yPosition += 8;
+    doc
+      .font("Helvetica-Bold")
+      .fontSize(20)
+      .fillColor("black")
+      .text("Crumbella", 0, y, { align: "center", width: pageWidth, lineBreak: false });
+    y += pt(8);
 
-    doc.setFontSize(10);
-    doc.setFont("Helvetica", "normal");
-    doc.text("SİPARİŞ BELGESİ", pageWidth / 2, yPosition, { align: "center" });
-    yPosition += 10;
+    doc
+      .font("Helvetica")
+      .fontSize(10)
+      .text("SİPARİŞ BELGESİ", 0, y, { align: "center", width: pageWidth, lineBreak: false });
+    y += pt(10);
 
     // Order Info
-    doc.setFontSize(9);
-    doc.text(`Sipariş No: ${orderData.orderId}`, 20, yPosition);
-    yPosition += 7;
+    doc
+      .font("Helvetica")
+      .fontSize(9)
+      .text(`Sipariş No: ${orderData.orderId}`, pt(20), y, { lineBreak: false });
+    y += pt(7);
     doc.text(
       `Tarih: ${new Date().toLocaleDateString("tr-TR", {
         year: "numeric",
         month: "2-digit",
         day: "2-digit",
       })}`,
-      20,
-      yPosition
+      pt(20),
+      y,
+      { lineBreak: false }
     );
-    yPosition += 12;
+    y += pt(12);
 
     // Customer Info Box
-    doc.setDrawColor(212, 175, 55);
-    doc.rect(20, yPosition - 5, 170, 20);
-    doc.setFontSize(9);
-    doc.setFont("Helvetica", "bold");
-    doc.text(`Müşteri: ${orderData.firstName} ${orderData.lastName}`, 25, yPosition);
-    doc.text(`Telefon: ${orderData.phone}`, 25, yPosition + 7);
-    yPosition += 28;
+    doc.strokeColor("#D4AF37").rect(pt(20), y - pt(5), pt(170), pt(20)).stroke();
+    doc
+      .font("Helvetica-Bold")
+      .fontSize(9)
+      .fillColor("black")
+      .text(`Müşteri: ${orderData.firstName} ${orderData.lastName}`, pt(25), y, { lineBreak: false });
+    doc.text(`Telefon: ${orderData.phone}`, pt(25), y + pt(7), { lineBreak: false });
+    y += pt(28);
 
     // Table Headers
-    doc.setFont("Helvetica", "bold");
-    doc.setFontSize(8);
-    const col1X = 20;
-    const col2X = 130;
-    const col3X = 150;
-    const col4X = 165;
+    const col1X = pt(20);
+    const col2X = pt(130);
+    const col3X = pt(150);
+    const col4X = pt(165);
+    const rightEdge = pt(190);
 
-    doc.text("Ürün", col1X, yPosition);
-    doc.text("Miktar", col2X, yPosition);
-    doc.text("Birim Fiyat", col3X, yPosition);
-    doc.text("Toplam", col4X, yPosition, { align: "right" });
-    yPosition += 8;
+    doc.font("Helvetica-Bold").fontSize(8).fillColor("black");
+    doc.text("Ürün", col1X, y, { width: col2X - col1X - pt(2), lineBreak: false });
+    doc.text("Miktar", col2X, y, { width: col3X - col2X - pt(2), lineBreak: false });
+    doc.text("Birim Fiyat", col3X, y, { width: col4X - col3X - pt(2), lineBreak: false });
+    doc.text("Toplam", col4X, y, { width: rightEdge - col4X, lineBreak: false });
+    y += pt(8);
 
-    doc.setDrawColor(212, 175, 55);
-    doc.line(20, yPosition - 2, 190, yPosition - 2);
-    yPosition += 3;
+    doc.moveTo(pt(20), y - pt(2)).lineTo(rightEdge, y - pt(2)).strokeColor("#D4AF37").stroke();
+    y += pt(3);
 
     // Table Rows
-    doc.setFont("Helvetica", "normal");
+    doc.font("Helvetica").fontSize(8).fillColor("black");
     orderData.items.forEach((item) => {
       const productName = item.portionType
         ? `${item.name} (${item.portionType})`
         : item.name;
-      doc.text(productName, col1X, yPosition, { maxWidth: 100 });
-      doc.text(item.quantity.toString(), col2X, yPosition);
-      doc.text(`₺${item.unitPrice.toFixed(2)}`, col3X, yPosition);
-      doc.text(`₺${item.totalPrice.toFixed(2)}`, col4X, yPosition, {
-        align: "right",
-      });
-      yPosition += 7;
+      doc.text(productName, col1X, y, { width: col2X - col1X - pt(2), lineBreak: false });
+      doc.text(item.quantity.toString(), col2X, y, { width: col3X - col2X - pt(2), lineBreak: false });
+      doc.text(`₺${item.unitPrice.toFixed(2)}`, col3X, y, { width: col4X - col3X - pt(2), lineBreak: false });
+      doc.text(`₺${item.totalPrice.toFixed(2)}`, col4X, y, { width: rightEdge - col4X, lineBreak: false });
+      y += pt(7);
     });
 
     // Total
-    yPosition += 3;
-    doc.setDrawColor(212, 175, 55);
-    doc.line(20, yPosition, 190, yPosition);
-    yPosition += 7;
-    doc.setFontSize(12);
-    doc.setFont("Helvetica", "bold");
-    doc.setTextColor(212, 175, 55);
-    doc.text(`TOPLAM: ₺${orderData.total.toFixed(2)}`, 190, yPosition, {
-      align: "right",
-    });
+    y += pt(3);
+    doc.moveTo(pt(20), y).lineTo(rightEdge, y).strokeColor("#D4AF37").stroke();
+    y += pt(7);
+    doc
+      .font("Helvetica-Bold")
+      .fontSize(12)
+      .fillColor("#D4AF37")
+      .text(`TOPLAM: ₺${orderData.total.toFixed(2)}`, pt(20), y, { align: "right", width: pt(170) });
 
     // Footer
-    doc.setTextColor(0, 0, 0);
-    doc.setFontSize(8);
-    doc.setFont("Helvetica", "normal");
-    yPosition = pageHeight - 30;
-    doc.line(20, yPosition, 190, yPosition);
-    yPosition += 5;
-    doc.setFontSize(7);
-    doc.text(
-      "Siparişiniz başarıyla alınmıştır.",
-      pageWidth / 2,
-      yPosition,
-      { align: "center" }
-    );
+    const footerY = pageHeight - pt(30);
+    doc.moveTo(pt(20), footerY).lineTo(rightEdge, footerY).strokeColor("black").stroke();
+    doc
+      .fillColor("black")
+      .font("Helvetica")
+      .fontSize(7)
+      .text("Siparişiniz başarıyla alınmıştır.", 0, footerY + pt(5), { align: "center", width: pageWidth, lineBreak: false });
     doc.text(
       "En kısa zamanda mesaj yoluyla sizinle iletişime geçeceğiz.",
-      pageWidth / 2,
-      yPosition + 5,
-      { align: "center" }
+      0,
+      footerY + pt(10),
+      { align: "center", width: pageWidth, lineBreak: false }
     );
-    doc.text("Crumbella Bakery", pageWidth / 2, yPosition + 12, {
-      align: "center",
-    });
+    doc.text("Crumbella Bakery", 0, footerY + pt(17), { align: "center", width: pageWidth, lineBreak: false });
 
-    const pdfBuffer = Buffer.from(doc.output("arraybuffer"));
+    doc.end();
+    await pdfReady;
+    const pdfBuffer = Buffer.concat(chunks);
     const filename = `siparis-${orderData.orderId}.pdf`;
 
     return new NextResponse(pdfBuffer, {
