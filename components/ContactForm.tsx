@@ -220,7 +220,7 @@ export function ContactForm() {
               {selectedProductId && 
                 pricing[selectedProductId]?.portionOptions?.map((option, idx) => (
                   <option key={idx} value={option.portionType}>
-                    {option.portionType} — ₺{option.unitPrice}
+                    {option.portionType} — ₺{option.unitPrice.toFixed(2)}
                   </option>
                 ))}
             </select>
@@ -252,7 +252,7 @@ export function ContactForm() {
                   ?.find(opt => opt.portionType === selectedPortionType)
                   ?.unitPrice && (
                   <>
-                    ₺{quantity * (pricing[selectedProductId]?.portionOptions?.find(opt => opt.portionType === selectedPortionType)?.unitPrice || 0)}
+                    ₺{(quantity * (pricing[selectedProductId]?.portionOptions?.find(opt => opt.portionType === selectedPortionType)?.unitPrice || 0)).toFixed(2)}
                   </>
                 )}
               </div>

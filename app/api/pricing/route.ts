@@ -44,31 +44,64 @@ async function fetchAndParsePricing(): Promise<PricingData> {
       const line = lines[i];
       if (!line.trim()) continue;
 
-      // Try tab-separated first, then comma-separated
-      let parts = line.split("\t");
-      if (parts.length < 4) {
-        parts = line.split(",");
+      // Parse CSV handling quoted values (for descriptions with commas)
+      let parts: string[] = [];
+      let current = "";
+      let inQuotes = false;
+
+      for (let j = 0; j < line.length; j++) {
+        const char = line[j];
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if ((char === "\t" || char === ",") && !inQuotes) {
+          parts.push(current.trim());
+          current = "";
+        } else {
+          current += char;
+        }
       }
+      if (current) parts.push(current.trim());
+
       if (parts.length < 4) continue;
 
-      const productName = parts[0].trim();
-      const portionType = parts[1].trim();  // "Adet", "Tepsi", vb.
-      const unitPriceStr = parts[2].trim();
-      const description = parts[3]?.trim() || "";         // Açıklama (4. sütun)
-      let imageUrl = parts[4]?.trim() || "";              // Görsel URL (5. sütun)
+      const productName = parts[0].replace(/"/g, "");
+      const portionType = parts[1].replace(/"/g, "");  // "Adet", "Tepsi", vb.
+      const unitPriceStr = parts[2].replace(/"/g, "");
+      const description = parts[3]?.replace(/"/g, "") || "";         // Açıklama (4. sütun)
+      let imageUrl = parts[4]?.replace(/"/g, "") || "";              // Görsel URL (5. sütun)
 
-      // Remove ₺ if present and parse as number
-      const unitPrice = parseInt(unitPriceStr.replace("₺", "").trim(), 10);
+      // Remove ₺ or " TL" if present and parse as number
+      const unitPrice = parseFloat(
+        unitPriceStr
+          .replace(" TL", "")
+          .replace("₺", "")
+          .trim()
+      );
       if (isNaN(unitPrice)) continue;
 
       // Validate image URL - fallback to logo if empty or placeholder
       if (!imageUrl || imageUrl.includes("example.com") || !imageUrl.startsWith("http")) {
         imageUrl = "/logo.png";
+      } else if (imageUrl.includes("drive.google.com")) {
+        // Convert Google Drive URL to direct download/preview format
+        const fileIdMatch = imageUrl.match(/id=([a-zA-Z0-9-_]+)/);
+        if (fileIdMatch) {
+          imageUrl = `https://drive.google.com/uc?export=view&id=${fileIdMatch[1]}`;
+        }
       }
 
       // Create ID from product name (lowercase, replace spaces/special chars)
-      const productId = productName
+      // Normalize Turkish characters first
+      let normalized = productName
         .toLowerCase()
+        .replace(/ç/g, "c")
+        .replace(/ğ/g, "g")
+        .replace(/ş/g, "s")
+        .replace(/ı/g, "i")
+        .replace(/ö/g, "o")
+        .replace(/ü/g, "u");
+      
+      const productId = normalized
         .replace(/\s+/g, "-")
         .replace(/[^\w-]/g, "");
 
@@ -81,6 +114,9 @@ async function fetchAndParsePricing(): Promise<PricingData> {
           portionOptions: [],
           image: imageUrl,
         };
+      } else if (!data[productId].image || data[productId].image === "/logo.png") {
+        // Update image from subsequent rows if not properly set
+        data[productId].image = imageUrl;
       }
 
       // Add portion option (can be multiple per product)
