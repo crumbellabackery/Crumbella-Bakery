@@ -19,9 +19,13 @@ export function CartView() {
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
+    email: "",
     phone: "",
     note: "",
   });
+
+  const isEmailValid = (value: string) =>
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 
   // Telefon numarasını format et (5xx xx xx şeklinde)
   const formatPhoneNumber = (value: string) => {
@@ -42,6 +46,7 @@ export function CartView() {
   const [submittedData, setSubmittedData] = useState({
     firstName: "",
     lastName: "",
+    email: "",
     phone: "",
   });
   const [countdown, setCountdown] = useState(10);
@@ -113,7 +118,13 @@ export function CartView() {
     payloadInput.name = "payload";
     payloadInput.value = JSON.stringify(payload);
 
+    const dispositionInput = document.createElement("input");
+    dispositionInput.type = "hidden";
+    dispositionInput.name = "disposition";
+    dispositionInput.value = "inline";
+
     form.appendChild(payloadInput);
+    form.appendChild(dispositionInput);
     document.body.appendChild(form);
     form.submit();
     document.body.removeChild(form);
@@ -128,11 +139,13 @@ export function CartView() {
             <h2 className="text-3xl font-bold bg-gradient-to-r from-luxury-accent to-luxury-secondary bg-clip-text text-transparent mb-3">
               Sipariş Başarıyla Gönderildi!
             </h2>
-            <p className="text-luxury-text/70 mb-8">İlk bilgilendirme <span className="font-semibold text-luxury-accent">{submittedData.phone}</span> numarasına kısa mesaj ile yapılacaktır.</p>
+            <p className="text-luxury-text/70 mb-8">Bilgilendirme <span className="font-semibold text-luxury-accent">{submittedData.phone}</span> numarasına ve <span className="font-semibold text-luxury-accent">{submittedData.email}</span> adresine iletilecektir.</p>
             <div className="bg-gradient-to-br from-luxury-accent/15 to-luxury-secondary/10 rounded-2xl p-6 mb-8 border border-luxury-accent/30 space-y-3 text-left">
               <div className="flex justify-between"><span className="text-luxury-text/70">Müşteri</span><span className="font-semibold">{submittedData.firstName} {submittedData.lastName}</span></div>
               <div className="h-px bg-luxury-accent/20"></div>
               <div className="flex justify-between"><span className="text-luxury-text/70">Telefon</span><span className="font-semibold">{submittedData.phone}</span></div>
+              <div className="h-px bg-luxury-accent/20"></div>
+              <div className="flex justify-between"><span className="text-luxury-text/70">E-posta</span><span className="font-semibold">{submittedData.email}</span></div>
               <div className="h-px bg-luxury-accent/20"></div>
               <div className="flex justify-between"><span className="text-luxury-text/70">Tutar</span><span className="text-lg font-bold text-luxury-accent">₺{submittedTotal}</span></div>
             </div>
@@ -229,6 +242,10 @@ export function CartView() {
       alert("Lütfen soyadınızı girin");
       return;
     }
+    if (!isEmailValid(formData.email)) {
+      alert("Lütfen geçerli bir e-posta adresi girin");
+      return;
+    }
     const cleanedPhone = formData.phone.replace(/\D/g, "");
     const phoneDigits = cleanedPhone.startsWith("0") ? cleanedPhone.slice(1) : cleanedPhone;
     if (phoneDigits.length !== 10 || !phoneDigits.startsWith("5")) {
@@ -245,6 +262,7 @@ export function CartView() {
         body: JSON.stringify({
           firstName: formData.firstName,
           lastName: formData.lastName,
+          email: formData.email,
           phone: formData.phone,
           cartItems: cart.items,
           cartTotal: cart.totalPrice,
@@ -268,6 +286,7 @@ export function CartView() {
         setSubmittedData({
           firstName: formData.firstName,
           lastName: formData.lastName,
+          email: formData.email,
           phone: formData.phone,
         });
         setSubmittedTotal(cart.totalPrice);
@@ -277,7 +296,7 @@ export function CartView() {
         setPdfBlobUrl("");
         setPdfError("");
         clearCart();
-        setFormData({ firstName: "", lastName: "", phone: "", note: "" });
+        setFormData({ firstName: "", lastName: "", email: "", phone: "", note: "" });
         setLoading(false);
         setCountdown(10);
         setSubmitted(true);
@@ -401,13 +420,28 @@ export function CartView() {
                 </div>
 
                 <div>
+                  <label className="block text-xs font-bold text-luxury-accent mb-1.5 sm:mb-2 uppercase">E-posta</label>
+                  <input
+                    type="email"
+                    required
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className={`w-full px-3 py-2 sm:py-2.5 rounded-lg bg-luxury-bg focus:outline-none focus:ring-2 focus:ring-luxury-accent/50 text-xs sm:text-sm border ${formData.email.length > 0 && !isEmailValid(formData.email) ? "border-red-500" : "border-luxury-accent/30"}`}
+                    placeholder="ornek@mail.com"
+                  />
+                  {formData.email.length > 0 && !isEmailValid(formData.email) && (
+                    <p className="text-xs text-red-500 mt-1.5 font-semibold">Geçerli bir e-posta adresi giriniz</p>
+                  )}
+                </div>
+
+                <div>
                   <label className="block text-xs font-bold text-luxury-accent mb-1.5 sm:mb-2 uppercase">Not</label>
                   <textarea value={formData.note} onChange={(e) => setFormData({ ...formData, note: e.target.value })} className="w-full px-3 py-2 sm:py-2.5 rounded-lg border border-luxury-accent/30 bg-luxury-bg focus:outline-none focus:ring-2 focus:ring-luxury-accent/50 text-xs sm:text-sm resize-none" placeholder="İsteğiniz..." rows={2} />
                 </div>
 
                 <button 
                   type="submit" 
-                  disabled={loading || !formData.firstName.trim() || !formData.lastName.trim() || formData.phone.replace(/\s/g, '').length !== 10 || !formData.phone.replace(/\s/g, '').startsWith('5')} 
+                  disabled={loading || !formData.firstName.trim() || !formData.lastName.trim() || !isEmailValid(formData.email) || formData.phone.replace(/\s/g, '').length !== 10 || !formData.phone.replace(/\s/g, '').startsWith('5')} 
                   className="w-full px-4 py-2 sm:py-3 rounded-lg bg-gradient-to-r from-luxury-accent to-luxury-secondary text-luxury-bg font-bold text-xs sm:text-sm hover:shadow-soft-md transition transform hover:scale-[1.02] duration-300 disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wide"
                 >
                   {loading ? "⏳ Gönderiliyor..." : "✓ Sipariş Oluştur"}
