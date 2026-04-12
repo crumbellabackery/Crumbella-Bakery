@@ -38,6 +38,13 @@ export function CartView() {
   const [countdown, setCountdown] = useState(10);
   const [orderId, setOrderId] = useState<string>("");
   const [submittedCart, setSubmittedCart] = useState<typeof cart.items>([]);
+  const [pdfBlobUrl, setPdfBlobUrl] = useState<string>("");
+  const [pdfGenerating, setPdfGenerating] = useState(false);
+  const [pdfError, setPdfError] = useState("");
+
+  const isInAppBrowser =
+    typeof navigator !== "undefined" &&
+    /Instagram|FBAN|FBAV|Line|Twitter/i.test(navigator.userAgent);
 
   useEffect(() => {
     if (submitted && countdown > 0) {
@@ -49,81 +56,48 @@ export function CartView() {
   }, [submitted, countdown]);
 
   useEffect(() => {
-    if (submitted && orderId) {
-      setTimeout(() => {
-        try {
-          const html2pdf = (window as any).html2pdf;
-          if (!html2pdf) {
-            console.error("html2pdf not loaded");
-            return;
-          }
+    return () => {
+      if (pdfBlobUrl) {
+        URL.revokeObjectURL(pdfBlobUrl);
+      }
+    };
+  }, [pdfBlobUrl]);
 
-          const pdfContent = `
-            <div style="font-family: 'Arial', sans-serif; color: #2c2c2c; max-width: 100%; margin: 0; padding: 0;">
-              <div style="text-align: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #d4af37;">
-                <h1 style="font-size: 32px; margin: 0 0 5px 0; font-weight: bold; letter-spacing: 2px;">Crumbella</h1>
-                <h2 style="font-size: 14px; color: #888; margin: 0; font-weight: 300; letter-spacing: 1px;">SİPARİŞ BELGESİ</h2>
-              </div>
+  const generatePdf = async (payload: {
+    firstName: string;
+    lastName: string;
+    phone: string;
+    orderId: string;
+    items: typeof cart.items;
+    total: number;
+  }) => {
+    setPdfGenerating(true);
+    setPdfError("");
 
-              <div style="margin-bottom: 15px; font-size: 11px; line-height: 1.6;">
-                <p style="margin: 5px 0;"><strong>Sipariş No:</strong> ${orderId}</p>
-                <p style="margin: 5px 0;"><strong>Tarih:</strong> ${new Date().toLocaleDateString("tr-TR", { year: 'numeric', month: '2-digit', day: '2-digit' })}</p>
-              </div>
+    try {
+      const response = await fetch("/api/generate-order-pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
-              <div style="margin-bottom: 20px; padding: 12px; background-color: #f9f7f4; border-left: 3px solid #d4af37;">
-                <p style="margin: 3px 0; font-size: 11px;"><strong>Müşteri:</strong> ${submittedData.firstName} ${submittedData.lastName}</p>
-                <p style="margin: 3px 0; font-size: 11px;"><strong>Telefon:</strong> ${submittedData.phone}</p>
-              </div>
+      if (!response.ok) {
+        throw new Error("PDF endpoint başarısız döndü");
+      }
 
-              <h3 style="font-size: 12px; font-weight: bold; margin: 15px 0 10px 0; text-transform: uppercase; letter-spacing: 1px;">Sipariş Detayları</h3>
-              <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 10px;">
-                <thead>
-                  <tr style="background-color: #f0ebe5; border-bottom: 2px solid #d4af37;">
-                    <th style="padding: 8px; text-align: left; font-weight: bold; border-right: 1px solid #ddd;">Ürün</th>
-                    <th style="padding: 8px; text-align: center; font-weight: bold; width: 15%; border-right: 1px solid #ddd;">Miktar</th>
-                    <th style="padding: 8px; text-align: right; font-weight: bold; width: 18%; border-right: 1px solid #ddd;">Birim Fiyat</th>
-                    <th style="padding: 8px; text-align: right; font-weight: bold; width: 18%;">Toplam</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${submittedCart.map(item => `
-                    <tr style="border-bottom: 1px solid #e5e5e5;">
-                      <td style="padding: 8px; text-align: left; border-right: 1px solid #f0f0f0;">${item.name}${item.portionType ? ` <span style="color: #999;">(${item.portionType})</span>` : ""}</td>
-                      <td style="padding: 8px; text-align: center; border-right: 1px solid #f0f0f0;">${item.quantity}</td>
-                      <td style="padding: 8px; text-align: right; border-right: 1px solid #f0f0f0;">₺${item.unitPrice.toFixed(2)}</td>
-                      <td style="padding: 8px; text-align: right; font-weight: 600;">₺${item.totalPrice.toFixed(2)}</td>
-                    </tr>
-                  `).join("")}
-                </tbody>
-              </table>
-
-              <div style="text-align: right; padding: 12px 0; border-top: 2px solid #d4af37; border-bottom: 2px solid #d4af37; margin-bottom: 15px;">
-                <p style="font-size: 14px; font-weight: bold; margin: 0; color: #d4af37;">TOPLAM: ₺${submittedTotal.toFixed(2)}</p>
-              </div>
-
-              <div style="font-size: 9px; color: #888; line-height: 1.5; text-align: center; padding-top: 10px; border-top: 1px solid #ddd;">
-                <p style="margin: 3px 0;">Siparişiniz başarıyla alınmıştır.</p>
-                <p style="margin: 3px 0;">En kısa zamanda mesaj yoluyla sizinle iletişime geçeceğiz.</p>
-                <p style="margin: 5px 0 0 0; font-size: 8px;">Crumbella Bakery</p>
-              </div>
-            </div>
-          `;
-          const element = document.createElement("div");
-          element.innerHTML = pdfContent;
-          const opt = {
-            margin: 12,
-            filename: `siparis-${orderId}.pdf`,
-            image: { type: "png" as const, quality: 0.98 },
-            html2canvas: { scale: 2 },
-            jsPDF: { orientation: "portrait" as const, unit: "mm" as const, format: "a4" as const },
-          };
-          html2pdf().set(opt).from(element).save();
-        } catch (error) {
-          console.error("PDF oluşturma hatası:", error);
-        }
-      }, 500);
+      const pdfBlob = await response.blob();
+      if (pdfBlobUrl) {
+        URL.revokeObjectURL(pdfBlobUrl);
+      }
+      const url = URL.createObjectURL(pdfBlob);
+      setPdfBlobUrl(url);
+    } catch (error) {
+      console.error("PDF oluşturma hatası:", error);
+      setPdfError("Sipariş belgesi hazırlanamadı. Lütfen 'Belgeyi Yeniden Oluştur' butonunu deneyin.");
+    } finally {
+      setPdfGenerating(false);
     }
-  }, [submitted, orderId, submittedTotal, submittedData, submittedCart]);
+  };
 
   if (submitted) {
     return (
@@ -142,8 +116,54 @@ export function CartView() {
               <div className="h-px bg-luxury-accent/20"></div>
               <div className="flex justify-between"><span className="text-luxury-text/70">Tutar</span><span className="text-lg font-bold text-luxury-accent">₺{submittedTotal}</span></div>
             </div>
-            <p className="text-sm text-luxury-text/60 mb-6"><span className="text-2xl font-bold text-luxury-accent">{countdown}</span> saniye içinde anasayfaya yönlendiriliyorsunuz...</p>
-            <p className="text-xs text-luxury-accent mb-6 font-semibold">Sipariş PDF indiriliyor...</p>
+            <p className="text-sm text-luxury-text/60 mb-5"><span className="text-2xl font-bold text-luxury-accent">{countdown}</span> saniye içinde anasayfaya yönlendiriliyorsunuz...</p>
+            {isInAppBrowser && (
+              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2 mb-4">
+                Instagram içi tarayıcı indirmeyi engelleyebilir. Gerekirse sağ üstten Safari/Chrome ile açın.
+              </p>
+            )}
+            {pdfGenerating && (
+              <p className="text-xs text-luxury-accent mb-4 font-semibold">Sipariş belgesi hazırlanıyor...</p>
+            )}
+            {pdfBlobUrl && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
+                <a
+                  href={pdfBlobUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2 rounded-lg border border-luxury-accent/40 hover:border-luxury-accent hover:bg-luxury-accent/5 text-luxury-text font-semibold text-sm text-center transition"
+                >
+                  Belgeyi Aç
+                </a>
+                <a
+                  href={pdfBlobUrl}
+                  download={`siparis-${orderId}.pdf`}
+                  className="px-4 py-2 rounded-lg border border-luxury-accent/40 hover:border-luxury-accent hover:bg-luxury-accent/5 text-luxury-text font-semibold text-sm text-center transition"
+                >
+                  Belgeyi İndir
+                </a>
+              </div>
+            )}
+            {pdfError && (
+              <div className="mb-4">
+                <p className="text-xs text-red-600 mb-2">{pdfError}</p>
+                <button
+                  onClick={() =>
+                    generatePdf({
+                      firstName: submittedData.firstName,
+                      lastName: submittedData.lastName,
+                      phone: submittedData.phone,
+                      orderId,
+                      items: submittedCart,
+                      total: submittedTotal,
+                    })
+                  }
+                  className="w-full px-4 py-2 rounded-lg border border-red-300 hover:bg-red-50 text-red-700 font-semibold text-sm transition"
+                >
+                  Belgeyi Yeniden Oluştur
+                </button>
+              </div>
+            )}
             <button onClick={() => (window.location.href = "/")} className="w-full px-6 py-3 rounded-lg bg-gradient-to-r from-luxury-accent to-luxury-secondary text-luxury-bg font-semibold hover:shadow-soft-md transition transform hover:scale-[1.02]">
               Anasayfaya Git →
             </button>
@@ -207,19 +227,32 @@ export function CartView() {
       const data = await response.json();
 
       if (response.ok && data.success) {
+        const nextOrderId = data.id || "";
+        const submittedPayload = {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          phone: formData.phone,
+          orderId: nextOrderId,
+          items: cart.items,
+          total: cart.totalPrice,
+        };
+
         setSubmittedData({
           firstName: formData.firstName,
           lastName: formData.lastName,
           phone: formData.phone,
         });
         setSubmittedTotal(cart.totalPrice);
-        setOrderId(data.id || "");
+        setOrderId(nextOrderId);
         setSubmittedCart(cart.items);
+        setPdfBlobUrl("");
+        setPdfError("");
         clearCart();
         setFormData({ firstName: "", lastName: "", phone: "", note: "" });
         setLoading(false);
         setCountdown(10);
         setSubmitted(true);
+        void generatePdf(submittedPayload);
       } else {
         setLoading(false);
         alert(`Hata: ${data.error}`);
