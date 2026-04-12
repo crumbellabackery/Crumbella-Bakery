@@ -10,15 +10,14 @@
   },
   "dependencies": {
     "html2pdf.js": "^0.14.0",
+    "jspdf": "^4.2.1",
     "next": "^15.1.0",
-    "pdfkit": "^0.18.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "resend": "^6.10.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
-    "@types/pdfkit": "^0.17.5",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "autoprefixer": "^10.4.20",
