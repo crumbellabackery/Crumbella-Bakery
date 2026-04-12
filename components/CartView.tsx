@@ -5,6 +5,15 @@ import { useCart } from "@/lib/cart-context";
 import { Section } from "@/components/Section";
 import Link from "next/link";
 
+type PdfPayload = {
+  firstName: string;
+  lastName: string;
+  phone: string;
+  orderId: string;
+  items: ReturnType<typeof useCart>["cart"]["items"];
+  total: number;
+};
+
 export function CartView() {
   const { cart, removeItem, updateQuantity, clearCart } = useCart();
   const [formData, setFormData] = useState({
@@ -41,6 +50,7 @@ export function CartView() {
   const [pdfBlobUrl, setPdfBlobUrl] = useState<string>("");
   const [pdfGenerating, setPdfGenerating] = useState(false);
   const [pdfError, setPdfError] = useState("");
+  const [pdfPayload, setPdfPayload] = useState<PdfPayload | null>(null);
 
   const isInAppBrowser =
     typeof navigator !== "undefined" &&
@@ -63,14 +73,7 @@ export function CartView() {
     };
   }, [pdfBlobUrl]);
 
-  const generatePdf = async (payload: {
-    firstName: string;
-    lastName: string;
-    phone: string;
-    orderId: string;
-    items: typeof cart.items;
-    total: number;
-  }) => {
+  const generatePdf = async (payload: PdfPayload) => {
     setPdfGenerating(true);
     setPdfError("");
 
@@ -99,6 +102,23 @@ export function CartView() {
     }
   };
 
+  const openPdfInSameTab = (payload: PdfPayload) => {
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.action = "/api/generate-order-pdf";
+    form.target = "_self";
+
+    const payloadInput = document.createElement("input");
+    payloadInput.type = "hidden";
+    payloadInput.name = "payload";
+    payloadInput.value = JSON.stringify(payload);
+
+    form.appendChild(payloadInput);
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
+  };
+
   if (submitted) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 animate-in fade-in backdrop-blur-sm">
@@ -121,6 +141,14 @@ export function CartView() {
               <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2 mb-4">
                 Instagram içi tarayıcı indirmeyi engelleyebilir. Gerekirse sağ üstten Safari/Chrome ile açın.
               </p>
+            )}
+            {isInAppBrowser && pdfPayload && (
+              <button
+                onClick={() => openPdfInSameTab(pdfPayload)}
+                className="w-full mb-4 px-4 py-2 rounded-lg border border-amber-300 hover:bg-amber-50 text-amber-800 font-semibold text-sm transition"
+              >
+                Belgeyi Aynı Sekmede Aç
+              </button>
             )}
             {pdfGenerating && (
               <p className="text-xs text-luxury-accent mb-4 font-semibold">Sipariş belgesi hazırlanıyor...</p>
@@ -245,6 +273,7 @@ export function CartView() {
         setSubmittedTotal(cart.totalPrice);
         setOrderId(nextOrderId);
         setSubmittedCart(cart.items);
+        setPdfPayload(submittedPayload);
         setPdfBlobUrl("");
         setPdfError("");
         clearCart();

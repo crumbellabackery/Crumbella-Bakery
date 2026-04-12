@@ -23,7 +23,22 @@ const pt = (mm: number) => mm * 2.8346;
 
 export async function POST(request: NextRequest) {
   try {
-    const orderData: OrderData = await request.json();
+    let orderData: OrderData;
+    const contentType = request.headers.get("content-type") || "";
+
+    if (contentType.includes("application/json")) {
+      orderData = await request.json();
+    } else {
+      const formData = await request.formData();
+      const payload = formData.get("payload");
+      if (typeof payload !== "string") {
+        return NextResponse.json(
+          { error: "Geçersiz sipariş verisi" },
+          { status: 400 }
+        );
+      }
+      orderData = JSON.parse(payload) as OrderData;
+    }
 
     const doc = new PDFDocument({ size: "A4", margin: 0, autoFirstPage: true });
     const chunks: Uint8Array[] = [];
