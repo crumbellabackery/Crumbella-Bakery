@@ -16,6 +16,15 @@ export type CartOrderRequest = {
   note?: string;
 };
 
+function getResendErrorMessage(error: unknown): string {
+  if (!error) return "Unknown email provider error";
+  if (typeof error === "string") return error;
+  if (typeof error === "object" && "message" in error) {
+    return String((error as { message?: unknown }).message ?? "Unknown error");
+  }
+  return "Unknown email provider error";
+}
+
 export async function POST(request: Request) {
   try {
     const apiKey = process.env.RESEND_API_KEY;
@@ -28,6 +37,10 @@ export async function POST(request: Request) {
     }
 
     const resend = new Resend(apiKey);
+    const fromEmail =
+      process.env.ORDER_FROM_EMAIL ||
+      process.env.RESEND_FROM_EMAIL ||
+      "Crumbella <onboarding@resend.dev>";
     const body: CartOrderRequest = await request.json();
 
     const {
@@ -99,7 +112,7 @@ export async function POST(request: Request) {
 
     // Send admin email
     const adminResponse = await resend.emails.send({
-      from: "Crumbella <onboarding@resend.dev>",
+      from: fromEmail,
       to: process.env.CONTACT_EMAIL || "crumbellabackery@gmail.com",
       subject: `🎁 Yeni Sipariş #${orderId} - ${firstName} ${lastName}`,
       html: `
@@ -153,33 +166,33 @@ export async function POST(request: Request) {
 
     if (adminResponse.error) {
       // Email send failed
+      const details = getResendErrorMessage(adminResponse.error);
       return Response.json(
-        { error: "Failed to send email" },
+        { error: "Failed to send admin email", details },
         { status: 500 }
       );
     }
 
-    // Send customer confirmation email
-    const pdfBuffer = await generateOrderPdfBuffer(orderPdfData);
-    const customerResponse = await resend.emails.send({
-      from: "Crumbella <onboarding@resend.dev>",
-      to: email,
-      subject: `Sipariş Belgeniz Hazır #${orderId}`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #c89b7b; border-bottom: 2px solid #c89b7b; padding-bottom: 10px;">
-            Sipariş Onayı
-          </h2>
-          <p>Merhaba ${firstName} ${lastName},</p>
-          <p>Siparişiniz tarafımıza ulaştı. Sipariş numaranız: <strong>${orderId}</strong></p>
+    // Send customer confirmation email first (without attachment for best deliverability)
+    const customerHtml = `
+      <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 640px; margin: 0 auto; background: #fffdf9; border: 1px solid #f0e7dd; border-radius: 12px; overflow: hidden;">
+        <div style="background: linear-gradient(135deg, #fff6ea, #f7ead7); padding: 20px 24px; border-bottom: 1px solid #ead8c3;">
+          <p style="margin: 0; font-size: 12px; letter-spacing: 1px; color: #8f6f4b; text-transform: uppercase;">Crumbella Bakery</p>
+          <h2 style="margin: 8px 0 0 0; color: #5e4122; font-size: 24px;">Sipariş Onayınız Hazır</h2>
+        </div>
 
-          <table style="width: 100%; border-collapse: collapse; margin: 15px 0;">
+        <div style="padding: 24px; color: #3f3a33;">
+          <p style="margin-top: 0;">Merhaba <strong>${firstName} ${lastName}</strong>,</p>
+          <p>Siparişiniz başarıyla alındı. Sipariş numaranız:</p>
+          <p style="display: inline-block; margin: 8px 0 20px 0; padding: 10px 14px; background: #f8f1e8; border: 1px solid #e6d7c6; border-radius: 8px; font-weight: 700; color: #5e4122;">#${orderId}</p>
+
+          <table style="width: 100%; border-collapse: collapse; margin: 4px 0 16px 0; font-size: 14px;">
             <thead>
-              <tr style="background-color: #f5f5f5;">
-                <th style="padding: 10px; text-align: left; border-bottom: 2px solid #c89b7b;">Ürün</th>
-                <th style="padding: 10px; text-align: center; border-bottom: 2px solid #c89b7b;">Miktar</th>
-                <th style="padding: 10px; text-align: right; border-bottom: 2px solid #c89b7b;">Birim Fiyatı</th>
-                <th style="padding: 10px; text-align: right; border-bottom: 2px solid #c89b7b;">Toplam</th>
+              <tr style="background: #f7efe6;">
+                <th style="padding: 10px; text-align: left; border-bottom: 1px solid #e4d4c2;">Ürün</th>
+                <th style="padding: 10px; text-align: center; border-bottom: 1px solid #e4d4c2;">Miktar</th>
+                <th style="padding: 10px; text-align: right; border-bottom: 1px solid #e4d4c2;">Birim</th>
+                <th style="padding: 10px; text-align: right; border-bottom: 1px solid #e4d4c2;">Toplam</th>
               </tr>
             </thead>
             <tbody>
@@ -187,30 +200,57 @@ export async function POST(request: Request) {
             </tbody>
           </table>
 
-          <div style="background-color: #faf7f2; padding: 15px; border-radius: 8px; margin: 20px 0;">
-            <div style="display: flex; justify-content: space-between; font-size: 18px;">
-              <strong>Genel Toplam:</strong>
-              <strong style="color: #c89b7b; font-size: 24px;">₺${cartTotal.toFixed(2)}</strong>
+          <div style="margin: 0 0 16px 0; padding: 14px; border-radius: 8px; background: #fff7ee; border: 1px solid #efdcc7;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 15px;">Genel Toplam</span>
+              <strong style="font-size: 22px; color: #8a6438;">₺${cartTotal.toFixed(2)}</strong>
             </div>
           </div>
 
-          <p>En kısa sürede sizinle iletişime geçeceğiz.</p>
-          <p>Crumbella Bakery</p>
+          ${note ? `<p style="margin: 0 0 16px 0;"><strong>Notunuz:</strong> ${note}</p>` : ""}
+
+          <p style="margin: 0 0 6px 0;">En kısa sürede sizinle iletişime geçeceğiz.</p>
+          <p style="margin: 0; color: #7d6f60; font-size: 13px;">Bu e-posta otomatik oluşturulmuştur.</p>
         </div>
-      `,
-      attachments: [
-        {
-          filename: `siparis-${orderId}.pdf`,
-          content: pdfBuffer,
-        },
-      ],
+      </div>
+    `;
+
+    const customerMainMail = await resend.emails.send({
+      from: fromEmail,
+      to: email,
+      subject: `Siparişiniz Alındı #${orderId}`,
+      html: customerHtml,
     });
 
-    if (customerResponse.error) {
+    if (customerMainMail.error) {
+      const details = getResendErrorMessage(customerMainMail.error);
       return Response.json(
-        { error: "Failed to send customer email" },
+        {
+          error: "Failed to send customer email",
+          details,
+          hint: "Resend domain verification ve ORDER_FROM_EMAIL değerini kontrol edin.",
+        },
         { status: 500 }
       );
+    }
+
+    // Try sending PDF as a secondary email (does not block order flow)
+    try {
+      const pdfBuffer = await generateOrderPdfBuffer(orderPdfData);
+      await resend.emails.send({
+        from: fromEmail,
+        to: email,
+        subject: `Sipariş Belgeniz (PDF) #${orderId}`,
+        html: `<p>Merhaba ${firstName}, sipariş belgeniz PDF olarak ektedir.</p>`,
+        attachments: [
+          {
+            filename: `siparis-${orderId}.pdf`,
+            content: pdfBuffer,
+          },
+        ],
+      });
+    } catch (pdfMailError) {
+      console.error("PDF ekli müşteri maili gönderilemedi:", pdfMailError);
     }
 
     // Order processed

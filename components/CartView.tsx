@@ -303,7 +303,9 @@ export function CartView() {
         void generatePdf(submittedPayload);
       } else {
         setLoading(false);
-        alert(`Hata: ${data.error}`);
+        const details = data?.details ? `\nDetay: ${data.details}` : "";
+        const hint = data?.hint ? `\nNot: ${data.hint}` : "";
+        alert(`Hata: ${data.error}${details}${hint}`);
       }
     } catch (error) {
       setLoading(false);
