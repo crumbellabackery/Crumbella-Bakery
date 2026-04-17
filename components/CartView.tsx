@@ -158,7 +158,7 @@ export function CartView() {
             {isInAppBrowser && pdfPayload && (
               <button
                 onClick={() => openPdfInSameTab(pdfPayload)}
-                className="w-full mb-4 px-4 py-2 rounded-lg border border-amber-300 hover:bg-amber-50 text-amber-800 font-semibold text-sm transition"
+                className="w-full mb-4 px-4 py-2 rounded-lg border border-amber-300 hover:bg-amber-50 text-amber-800 font-semibold text-sm transition hidden"
               >
                 Belgeyi Aynı Sekmede Aç
               </button>
@@ -167,7 +167,7 @@ export function CartView() {
               <p className="text-xs text-luxury-accent mb-4 font-semibold">Sipariş belgesi hazırlanıyor...</p>
             )}
             {pdfBlobUrl && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4 hidden">
                 <a
                   href={pdfBlobUrl}
                   target="_blank"
@@ -186,7 +186,7 @@ export function CartView() {
               </div>
             )}
             {pdfError && (
-              <div className="mb-4">
+              <div className="mb-4 hidden">
                 <p className="text-xs text-red-600 mb-2">{pdfError}</p>
                 <button
                   onClick={() =>
@@ -220,9 +220,9 @@ export function CartView() {
         <p className="mx-auto mb-12 max-w-2xl text-luxury-text/70 text-lg">Menüden sevdiğiniz ürünleri ekleyin!</p>
         <div className="flex flex-col gap-3 sm:flex-row justify-center">
           <Link href="/menu" className="px-8 py-3 rounded-lg bg-gradient-to-r from-luxury-accent to-luxury-secondary text-luxury-bg font-semibold hover:shadow-soft-md transition transform hover:scale-105">
-            🍰 Menüyü Gözat
+            🍰 Menüye Gözat
           </Link>
-          <Link href="/gallery" className="px-8 py-3 rounded-lg border-2 border-luxury-accent/40 hover:border-luxury-accent hover:bg-luxury-accent/5 text-luxury-text font-semibold transition transform hover:scale-105">
+          <Link href="/packages" className="px-8 py-3 rounded-lg border-2 border-luxury-accent/40 hover:border-luxury-accent hover:bg-luxury-accent/5 text-luxury-text font-semibold transition transform hover:scale-105">
             📦 Özel Paketler
           </Link>
         </div>

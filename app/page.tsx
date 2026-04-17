@@ -46,25 +46,20 @@ export default function HomePage() {
             className="animate-fade-up mt-10 flex flex-col items-center justify-center gap-4 opacity-0 [animation-delay:0.28s] sm:flex-row sm:gap-5"
             style={{ animationFillMode: "forwards" }}
           >
-            <Button href="/menu" className="min-w-[200px]">
-              Sipariş Ver
-            </Button>
-          </div>
-          <p className="mt-8 text-sm text-luxury-text/60">
             <Link
               href="/menu"
-              className="font-medium text-luxury-accent underline-offset-4 hover:underline"
+              className="inline-flex min-w-[200px] items-center justify-center rounded-[25px] bg-[#D6A77A] px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[#C48A5A]"
             >
-              Menüyü incele
+              Menüyü İncele
             </Link>
-            <span className="mx-2 text-luxury-text/30">·</span>
             <Link
-              href="/gallery"
-              className="font-medium text-luxury-accent underline-offset-4 hover:underline"
+              href="/packages"
+              className="inline-flex min-w-[200px] items-center justify-center rounded-[25px] border border-[#D6A77A] bg-transparent px-5 py-2.5 text-sm font-medium text-[#8B6F5A] transition hover:bg-[#D6A77A] hover:text-white"
             >
-              Özel Paketleri göz at
+              Paketleri Gör
             </Link>
-          </p>
+          </div>
+
         </div>
       </section>
 
@@ -115,10 +110,65 @@ export default function HomePage() {
           </div>
         </div>
 
-        <div className="mt-12 flex justify-center">
-          <Button href="/menu" className="min-w-[200px]">
-            Menüyü Aç
-          </Button>
+      </Section>
+
+      {/* Trust Building */}
+      <Section
+        eyebrow="Güvenilir ve kaliteli"
+        title="Neden Crumbella?"
+        className="pb-8"
+      >
+        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="flex flex-col items-center text-center">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-green-100 to-green-200">
+              <span className="text-2xl">🌱</span>
+            </div>
+            <h3 className="mb-2 text-lg font-semibold text-luxury-text">
+              Günlük Üretim
+            </h3>
+            <p className="text-sm text-luxury-text/70">
+              Her gün taze pişiriyoruz, dünden kalmış ürün yok.
+            </p>
+          </div>
+
+          <div className="flex flex-col items-center text-center">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-100 to-blue-200">
+              <span className="text-2xl">✨</span>
+            </div>
+            <h3 className="mb-2 text-lg font-semibold text-luxury-text">
+              Katkısız
+            </h3>
+            <p className="text-sm text-luxury-text/70">
+              Doğal malzemeler, koruyucu madde yok.
+            </p>
+          </div>
+
+          <div className="flex flex-col items-center text-center">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-purple-100 to-purple-200">
+              <span className="text-2xl">🧼</span>
+            </div>
+            <h3 className="mb-2 text-lg font-semibold text-luxury-text">
+              Hijyen
+            </h3>
+            <p className="text-sm text-luxury-text/70">
+              Temiz ve steril ortamda hazırlıyoruz.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-8 mx-auto grid w-full max-w-5xl gap-4 text-sm text-luxury-text/80 sm:grid-cols-3 sm:items-start sm:justify-items-center">
+          <span className="flex items-center justify-center gap-2 sm:justify-start">
+            <span className="text-green-600">✓</span>
+            Siparişiniz mail ile teyit edilir
+          </span>
+          <span className="flex items-center justify-center gap-2 sm:justify-start">
+            <span className="text-green-600">✓</span>
+            Günlük üretim
+          </span>
+          <span className="flex items-center justify-center gap-2 sm:justify-start">
+            <span className="text-green-600">✓</span>
+            Aynı gün teslim
+          </span>
         </div>
       </Section>
     </>

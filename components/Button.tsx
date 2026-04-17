@@ -18,7 +18,7 @@ type ButtonAsLink = Base & {
 
 const variants = {
   primary:
-    "bg-gradient-to-r from-luxury-accent to-luxury-secondary text-white shadow-soft hover:shadow-soft-md hover:-translate-y-0.5 active:translate-y-0",
+    "bg-gradient-to-r from-[#D6A77A] to-[#C48A5A] text-white shadow-soft hover:shadow-soft-md hover:-translate-y-0.5 active:translate-y-0",
   secondary:
     "bg-luxury-primary/20 text-luxury-text border border-luxury-accent/30 shadow-soft hover:bg-luxury-primary/30 hover:border-luxury-accent/50 hover:-translate-y-0.5",
   ghost:
@@ -30,7 +30,7 @@ const variants = {
  */
 export function Button(props: ButtonAsButton | ButtonAsLink) {
   const base =
-    "inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold tracking-wide transition-all duration-300 disabled:opacity-50 disabled:pointer-events-none";
+    "inline-flex items-center justify-center gap-2 rounded-[30px] px-7 py-3.5 text-sm font-semibold tracking-wide transition-all duration-300 disabled:opacity-50 disabled:pointer-events-none";
 
   if ("href" in props && props.href) {
     const {

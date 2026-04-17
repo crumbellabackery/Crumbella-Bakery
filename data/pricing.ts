@@ -16,6 +16,7 @@ export type ProductItem = {
   description?: string; // Açıklama (sadece birinci satırdan)
   portionOptions: PortionOption[]; // Mevcut porsiyon tipleri
   image?: string;       // Görsel URL (sadece birinci satırdan)
+  category: string;     // Kategori: Tatlılar, Tuzlular, Pastalar
 };
 
 export type PricingData = Record<string, ProductItem>;

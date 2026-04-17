@@ -3,97 +3,35 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { mainNav, isNavActive } from "@/lib/navigation";
+import { useCart } from "@/lib/cart-context";
 
 type NavHref = (typeof mainNav)[number]["href"];
 
+const iconMap: Record<NavHref, string> = {
+  "/": "/images/house.svg",
+  "/menu": "/images/fork-knife.svg",
+  "/packages": "/images/package.svg",
+  "/about": "/images/info.svg",
+  "/cart": "/images/shopping-cart.svg",
+};
+
+const iconAltMap: Record<NavHref, string> = {
+  "/": "Ana sayfa",
+  "/menu": "Menü",
+  "/packages": "Paketler",
+  "/about": "Hakkımızda",
+  "/cart": "Sepet",
+};
+
 function Icon({ name, active }: { name: NavHref; active: boolean }) {
-  const stroke = active ? "stroke-luxury-accent" : "stroke-luxury-text/50";
-  const className = `h-6 w-6 ${stroke}`;
-  switch (name) {
-    case "/":
-      return (
-        <svg className={className} fill="none" viewBox="0 0 24 24" aria-hidden>
-          <path
-            strokeWidth={1.75}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1v-9.5z"
-          />
-        </svg>
-      );
-    case "/menu":
-      return (
-        <svg className={className} fill="none" viewBox="0 0 24 24" aria-hidden>
-          <path
-            strokeWidth={1.75}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M4 6h16M4 12h10M4 18h16"
-          />
-        </svg>
-      );
-    case "/gallery":
-      return (
-        <svg className={className} fill="none" viewBox="0 0 24 24" aria-hidden>
-          <rect
-            x="3"
-            y="3"
-            width="7"
-            height="7"
-            rx="1.5"
-            strokeWidth={1.75}
-          />
-          <rect
-            x="14"
-            y="3"
-            width="7"
-            height="7"
-            rx="1.5"
-            strokeWidth={1.75}
-          />
-          <rect
-            x="3"
-            y="14"
-            width="7"
-            height="7"
-            rx="1.5"
-            strokeWidth={1.75}
-          />
-          <rect
-            x="14"
-            y="14"
-            width="7"
-            height="7"
-            rx="1.5"
-            strokeWidth={1.75}
-          />
-        </svg>
-      );
-    case "/about":
-      return (
-        <svg className={className} fill="none" viewBox="0 0 24 24" aria-hidden>
-          <path
-            strokeWidth={1.75}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M12 21a9 9 0 100-18 9 9 0 000 18z"
-          />
-          <path
-            strokeWidth={1.75}
-            strokeLinecap="round"
-            d="M12 16v-1M12 8v5"
-          />
-        </svg>
-      );
-    case "/cart":
-      return (
-        <svg className={className} fill={active ? "rgb(200, 155, 123)" : "rgba(43, 43, 43, 0.6)"} viewBox="0 0 24 24" aria-hidden>
-          <path d="M7 4V2c0-.55-.45-1-1-1s-1 .45-1 1v2H2c-.55 0-1 .45-1 1v2c0 .55.45 1 1 1h1.46l1.41 14.73C4.01 21.21 5.18 22 6.54 22h10.92c1.36 0 2.53-.79 2.67-2.27L20.54 8H21c.55 0 1-.45 1-1V5c0-.55-.45-1-1-1h-3V2c0-.55-.45-1-1-1s-1 .45-1 1v2H7zm10.5 14H6.5L5.13 8h13.74l-1.37 10z" />
-        </svg>
-      );
-    default:
-      return null;
-  }
+  const opacity = active ? "opacity-100" : "opacity-60";
+  return (
+    <img
+      src={iconMap[name]}
+      alt={iconAltMap[name]}
+      className={`h-6 w-6 ${opacity}`}
+    />
+  );
 }
 
 /**
@@ -101,6 +39,7 @@ function Icon({ name, active }: { name: NavHref; active: boolean }) {
  */
 export function MobileTabBar() {
   const pathname = usePathname();
+  const { cart } = useCart();
 
   return (
     <nav
@@ -128,6 +67,9 @@ export function MobileTabBar() {
       >
         {mainNav.map((item) => {
           const active = isNavActive(pathname, item.href);
+          const isCart = item.href === "/cart";
+          const cartCount = cart.items.length;
+
           return (
             <li key={item.href} style={{ minWidth: 0, flex: 1 }}>
               <Link
@@ -150,6 +92,7 @@ export function MobileTabBar() {
               >
                 <span
                   style={{
+                    position: "relative",
                     display: "flex",
                     height: "2rem",
                     width: "2rem",
@@ -160,6 +103,30 @@ export function MobileTabBar() {
                   }}
                 >
                   <Icon name={item.href} active={active} />
+                  {isCart && cartCount > 0 ? (
+                    <span
+                      style={{
+                        position: "absolute",
+                        top: "-0.35rem",
+                        right: "-0.35rem",
+                        minWidth: "1rem",
+                        height: "1rem",
+                        padding: "0 0.2rem",
+                        borderRadius: "999px",
+                        background: "rgb(220, 53, 69)",
+                        color: "white",
+                        fontSize: "0.625rem",
+                        fontWeight: 700,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        lineHeight: 1,
+                        boxShadow: "0 0 0 2px rgba(255,255,255,0.85)",
+                      }}
+                    >
+                      {cartCount}
+                    </span>
+                  ) : null}
                 </span>
                 <span
                   style={{

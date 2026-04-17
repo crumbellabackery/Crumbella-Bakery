@@ -10,6 +10,7 @@ export default function MenuPage() {
   const [pricing, setPricing] = useState<PricingData>({});
   const [loading, setLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState<ProductItem | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>('Tümü');
 
   useEffect(() => {
     // Fetch pricing from API (Google Sheets)
@@ -25,6 +26,14 @@ export default function MenuPage() {
       })
       .finally(() => setLoading(false));
   }, []);
+
+  // Get unique categories
+  const categories = ['Tümü', ...Array.from(new Set(Object.values(pricing).map(p => p.category).filter(Boolean)))];
+
+  // Filter products by category
+  const filteredProducts = selectedCategory === 'Tümü' 
+    ? Object.values(pricing) 
+    : Object.values(pricing).filter(p => p.category === selectedCategory);
   return (
     <Section
       eyebrow="Fiyat listesi"
@@ -32,17 +41,34 @@ export default function MenuPage() {
       className="pt-6"
     >
       <p className="mx-auto mb-4 max-w-2xl text-center text-luxury-text/70">
-        Her ürün özenle hazırlanır. Bireysel ve tepsi siparişleri için çeşitli seçenekler.{" "}
+        Her ısırıkta ev sıcaklığı ile hazırlanan ürünlerimizi keşfedin. Her ürün özenle hazırlanır. Bireysel ve tepsi siparişleri için çeşitli seçenekler.{" "}
         <span className="font-medium text-luxury-accent">Sipariş üzerine</span> ürünler işaretlidir.
       </p>
       <p className="mx-auto mb-8 max-w-2xl text-center text-xs text-luxury-text/50">
         📸 Fotoğraflar tamamen kendi çekimimizdir
       </p>
 
+      {/* Category Filter */}
+      <div className="mx-auto mb-8 flex max-w-2xl flex-wrap justify-center gap-2">
+        {['Tümü', '🍰 Tatlılar', '🎂 Pastalar', '🥐 Tuzlular', '🍪 Atıştırmalıklar'].map((cat) => (
+          <button
+            key={cat}
+            onClick={() => setSelectedCategory(cat)}
+            className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+              selectedCategory === cat
+                ? 'bg-luxury-accent text-luxury-bg shadow-soft'
+                : 'bg-luxury-primary/30 text-luxury-text/70 hover:bg-luxury-primary/50'
+            }`}
+          >
+            {cat}
+          </button>
+        ))}
+      </div>
+
       <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 pb-24 sm:pb-6">
-        {Object.entries(pricing).map(([productId, product]) => (
+        {filteredProducts.map((product) => (
           <li
-            key={productId}
+            key={product.id}
             className="group relative flex flex-col overflow-hidden rounded-3xl bg-luxury-bg/95 shadow-soft ring-1 ring-luxury-accent/20 transition duration-300 hover:-translate-y-1 hover:shadow-soft-md"
           >
             <div className="relative aspect-[4/3] overflow-hidden bg-luxury-primary">

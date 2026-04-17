@@ -1,8 +1,8 @@
 /**
  * API endpoint - Google Sheets'ten fiyat verilerini çeker ve parse eder
- * Format: Ürün Adı | Porsiyon Tipi | Birim Fiyatı | Açıklama | Görsel URL
- * Örnek: Poğaça | Adet | 25 | Taze pişmiş... | URL
- *        Poğaça | Tepsi | 150 | Taze pişmiş... | URL
+ * Format: Ürün Adı | Porsiyon Tipi | Birim Fiyatı | Açıklama | Görsel URL | Kategori
+ * Örnek: Poğaça | Adet | 25 | Taze pişmiş... | URL | Tuzlular
+ *        Poğaça | Tepsi | 150 | Taze pişmiş... | URL | Tuzlular
  */
 
 const SPREADSHEET_ID = "1vpGMQ_W__sc4VYnqZGoItyL5j4LMmDSEMzylC2hDq7k";
@@ -19,9 +19,20 @@ export type ProductItem = {
   description?: string;
   portionOptions: PortionOption[];
   image?: string;
+  category: string;
 };
 
 export type PricingData = Record<string, ProductItem>;
+
+function mapCategory(category: string): string {
+  switch (category.trim()) {
+    case '1': return '🍰 Tatlılar';
+    case '2': return '🎂 Pastalar';
+    case '3': return '🥐 Tuzlular';
+    case '4': return '🍪 Atıştırmalıklar';
+    default: return category;
+  }
+}
 
 async function fetchAndParsePricing(): Promise<PricingData> {
   try {
@@ -69,6 +80,7 @@ async function fetchAndParsePricing(): Promise<PricingData> {
       const unitPriceStr = parts[2].replace(/"/g, "");
       const description = parts[3]?.replace(/"/g, "") || "";         // Açıklama (4. sütun)
       let imageUrl = parts[4]?.replace(/"/g, "") || "";              // Görsel URL (5. sütun)
+      const category = parts[5]?.replace(/"/g, "") || "Diğer";        // Kategori (6. sütun)
 
       // Remove ₺ or " TL" if present and parse as number
       const unitPrice = parseFloat(
@@ -113,6 +125,7 @@ async function fetchAndParsePricing(): Promise<PricingData> {
           description: description || undefined,
           portionOptions: [],
           image: imageUrl,
+          category: mapCategory(category),
         };
       } else if (!data[productId].image || data[productId].image === "/logo.png") {
         // Update image from subsequent rows if not properly set

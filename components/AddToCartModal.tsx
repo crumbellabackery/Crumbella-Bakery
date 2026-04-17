@@ -45,7 +45,7 @@ export function AddToCartModal({ product, isOpen, onClose }: AddToCartModalProps
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md bg-luxury-bg rounded-3xl p-6 shadow-2xl sm:rounded-2xl animate-in slide-in-from-bottom-5 duration-300 pb-24 sm:pb-0"
+        className="w-full max-w-md bg-luxury-bg rounded-3xl p-6 shadow-2xl sm:rounded-2xl animate-in slide-in-from-bottom-5 duration-300 pb-24 sm:pb-8"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

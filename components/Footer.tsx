@@ -30,7 +30,7 @@ export function Footer() {
             </li>
             <li>
               <Link
-                href="/gallery"
+                href="/packages"
                 className="text-luxury-text/70 transition hover:text-luxury-accent"
               >
                 Özel Paketler
